@@ -43,6 +43,45 @@ week_10_folds <- vfold_cv(week_10_train, v = 10)
 
 * Calculate the RMSE for this model on the training data. (We did a similar exercise on Tuesday, so feel free to refer to your prior code.)
 
+```{r}
+
+mod_1_wfl <- workflow() %>%
+  add_recipe(recipe(reg_chg ~ treatment + poverty_n,
+             data = week_10_train)) %>%
+  add_model(linear_reg() %>% set_engine("lm")) 
+
+model_fit <- mod_1_wfl %>%
+  fit(data = week_10_train) 
+
+predictions <- predict(model_fit, new_data = week_10_test)
+
+tibble(truth = week_10_test$reg_chg, pred = predictions$.pred)
+
+## When I did this: I got a tibble column for predictions
+
+## using tibble versus this: 
+model_fit %>% predict(new_data = week_10_test) %>%
+  bind_cols(week_10_test %>% select(reg_chg)) %>%
+  metrics(truth = reg_chg, estimate = `.pred`)
+
+#### 
+mod_2_wfl <- workflow() %>%
+  add_recipe(recipe(reg_chg ~ treatment + poverty_n + block_number,
+             data = week_10_train)) %>%
+  add_model(linear_reg() %>% set_engine("lm"))
+
+model_fit_2 <- mod_2_wfl %>%
+  fit(data = week_10_train) 
+
+model_fit_2 %>% predict(new_data = week_10_test) %>%
+  bind_cols(week_10_test %>% select(reg_chg)) %>%
+  metrics(truth = reg_chg, estimate = `.pred`)
+
+
+
+```
+
+
 * Create a model which produces a lower RMSE on the training data. (Do not use the cross-validated data sets until the next Scene.) You may do anything you like! Our advice is to keep the same basic structure as `mod_1_wfl`, but to change the formula and to experiment with various `step_` functions. Call this workflow `mod_2_wfl`. Hints: `step_poly()` and `step_bs()` are fun to play with.
 
 
@@ -54,7 +93,25 @@ week_10_folds <- vfold_cv(week_10_train, v = 10)
 
 * Calculate mean RMSE using `week_10_folds` for both `mod_1_wfl` and `mod_2_wfl`.  Even though I have no idea what model you built, I bet that the cross-validated `mod_1_wfl` RSME will be better (lower) that the one for `mod_2_wfl`.
 
+```{r}
+week_10_wfl_folds <- vfold_cv(week_10, v = 10)
+
+mod_1_wfl %>%
+  fit_resamples(resamples = week_10_wfl_folds) %>%
+  collect_metrics()
+
+mod_2_wfl_folds <- vfold_cv(week_10, v = 10)
+
+mod_2_wfl %>%
+  fit_resamples(resamples = mod_2_wfl_folds) %>%
+  collect_metrics()
+
+```
+
+
 * Write a few sentences explaining why a model which worked so well on week_10_train worked so poorly on week_10_folds.
+
+## what does this mean?
 
 
 
@@ -63,6 +120,11 @@ week_10_folds <- vfold_cv(week_10_train, v = 10)
 **Prompt:** Let's use `mod_1_wfl`. Recall that, when using simple `stan_glm()`, we can use `posterior_predict()` and `posterior_epred()` to create individuals predictions and expected values, respectively. The corresponding function is tidymodels is simply `predict()`.
 
 * Use `predict()` to calculate the expected `reg_chg` in a polling station assigned to the treatment and with `poverty_n` equal to 1.5. 
+
+```{r}
+mod_1_wfl
+```
+
 
 * Provide the 95% confidence interval for this estimate.
 
