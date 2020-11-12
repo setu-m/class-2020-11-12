@@ -112,6 +112,7 @@ mod_2_wfl %>%
 * Write a few sentences explaining why a model which worked so well on week_10_train worked so poorly on week_10_folds.
 
 ## what does this mean?
+you over fit the model with model 2, which is not easy to generalize in the week10folds
 
 
 
