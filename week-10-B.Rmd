@@ -1,0 +1,70 @@
+---
+title: "Week 10, Day 2"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(PPBDS.data)
+library(stringr)
+library(rstanarm)
+library(tidyverse)
+library(tidymodels)
+
+# We are still working with the kenya data set. In addition to the variables we
+# used last week, we will (on Thursday) make use of the county in which the poll
+# station was located and of the block_number of that location. Check out the
+# stringr code we use to pull those variables out. Can you figure out how the
+# **stringr** code below works? Is there a better way to do it?
+
+week_10 <- kenya %>% 
+  rename(reg_chg = reg_byrv13) %>% 
+  filter(treatment %in% c("control", "local")) %>% 
+  droplevels() %>% 
+  mutate(poverty_n = (poverty - mean(poverty))/sd(poverty)) %>% 
+  mutate(county = str_replace(block, "/\\d*", "")) %>% 
+  mutate(block_number = str_extract(block, "/\\d*")) %>% 
+  mutate(block_number = str_replace(block_number, "/", "")) %>% 
+  select(county, block_number, poll_station, reg_chg, treatment, poverty_n) 
+
+# These are the data splits we did on Tuesday.
+
+set.seed(9)
+week_10_split <- initial_split(week_10, prob = 0.8)
+week_10_train <- training(week_10_split)
+week_10_test  <- testing(week_10_split)
+week_10_folds <- vfold_cv(week_10_train, v = 10)
+```
+
+
+## Scene 1
+
+**Prompt:** Create a workflow object called `mod_1_wfl` which uses the `lm` engine to run a linear regression. Use a recipe in which reg_chg is a function of `treatment` and `poverty_n`. (No need for an interaction term today.) 
+
+* Calculate the RMSE for this model on the training data. (We did a similar exercise on Tuesday, so feel free to refer to your prior code.)
+
+* Create a model which produces a lower RMSE on the training data. (Do not use the cross-validated data sets until the next Scene.) You may do anything you like! Our advice is to keep the same basic structure as `mod_1_wfl`, but to change the formula and to experiment with various `step_` functions. Call this workflow `mod_2_wfl`. Hints: `step_poly()` and `step_bs()` are fun to play with.
+
+
+ 
+
+## Scene 2
+
+**Prompt:** The danger of using all of the training data to fit a model, and then use that same training data to estimate the RMSE, is that the we will dramatically underestimate the RMSE we will see in the future, because we have overfit. The best way to deal with this problem is to use cross-validation. 
+
+* Calculate mean RMSE using `week_10_folds` for both `mod_1_wfl` and `mod_2_wfl`.  Even though I have no idea what model you built, I bet that the cross-validated `mod_1_wfl` RSME will be better (lower) that the one for `mod_2_wfl`.
+
+* Write a few sentences explaining why a model which worked so well on week_10_train worked so poorly on week_10_folds.
+
+
+
+## Scene 3
+
+**Prompt:** Let's use `mod_1_wfl`. Recall that, when using simple `stan_glm()`, we can use `posterior_predict()` and `posterior_epred()` to create individuals predictions and expected values, respectively. The corresponding function is tidymodels is simply `predict()`.
+
+* Use `predict()` to calculate the expected `reg_chg` in a polling station assigned to the treatment and with `poverty_n` equal to 1.5. 
+
+* Provide the 95% confidence interval for this estimate.
+
+* Write a few sentences interpreting this confidence interval.
+
